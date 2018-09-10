@@ -4,7 +4,6 @@
 // Author      : Tomas Balyo
 // Version     : $Revision: 46 $
 // Date        : $Date: 2015-04-09 16:14:19 +0200 (Thu, 09 Apr 2015) $
-// Copyright   : copyright KIT
 //============================================================================
 
 #include "solvers/MiniSat.h"
