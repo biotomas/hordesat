@@ -6,6 +6,7 @@
 // Date        : $Date: 2015-04-09 16:14:19 +0200 (Thu, 09 Apr 2015) $
 //============================================================================
 
+#include "solvers/CandyHorde.h"
 #include "solvers/MiniSat.h"
 #include "solvers/Lingeling.h"
 #include "utilities/DebugUtils.h"
@@ -166,6 +167,7 @@ int main(int argc, char** argv) {
 		puts("        -c=<INT>\t use that many cores on each mpi node, default is 1.");
 		puts("        -v=<INT>\t verbosity level, higher means more messages, default is 1.");
 		puts("        -s=minisat\t use minisat instead of lingeling");
+		puts("        -s=candy\t use candy instead of lingeling");
 		puts("        -s=combo\t use both minisat and lingeling");
 		puts("        -r=<INT>\t max number of rounds (~timelimit in seconds), default is unlimited.");
 		puts("        -i=<INT>\t communication interval in miliseconds, default is 1000.");
@@ -203,7 +205,12 @@ int main(int argc, char** argv) {
 				solvers.push_back(new Lingeling());
 				log(1, "Running Lingeling on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
 			}
-		} else {
+		} 
+		else if (params.getParam("s") == "candy") {
+			solvers.push_back(new CandyHorde());
+			log(1, "Running Candy on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
+		} 
+		else {
 			solvers.push_back(new Lingeling());
 			log(1, "Running Lingeling on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
 		}
