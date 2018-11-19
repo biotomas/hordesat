@@ -12,18 +12,29 @@
 #include "PortfolioSolverInterface.h"
 #include "../utilities/Threading.h"
 
-#include "candy/simp/SimpSolver.h"
-#include "candy/core/CandySolverInterface.h" 
-
 #define CLS_COUNT_INTERRUPT_LIMIT 300
 
 namespace Candy {
 	class Lit;
+	class CandySolverInterface;
+	class ClauseDatabase;
+	class Trail;
+	class Propagate;
+ 	class ConflictAnalysis;
+	class VSIDS;
+	class LRB;
 }
 
 class CandyHorde : public PortfolioSolverInterface {
 
 private:
+	Candy::ClauseDatabase* clause_db;
+	Candy::Trail* assignment;
+	Candy::Propagate* propagate;
+	Candy::ConflictAnalysis* learning;
+	Candy::VSIDS* vsids_branching;
+	Candy::LRB* lrb_branching;
+
 	Candy::CandySolverInterface* solver;
 
 	std::vector< std::vector<int> > learnedClausesToAdd;
@@ -37,6 +48,10 @@ private:
 public:
 	int myId;
 	LearnedClauseCallback* callback;
+
+	CandyHorde();
+	// CandyHorde(double _random_seed);
+	virtual ~CandyHorde();
 
 	bool loadFormula(const char* filename);
 	//Get the number of variables of the formula
@@ -71,13 +86,8 @@ public:
 
 	// Get solver statistics
 	SolvingStatistics getStatistics();
-	// Diversify
-	void diversify(int rank, int size);
 
-	// constructor
-	CandyHorde();
-	// destructor
-	virtual ~CandyHorde();
+	void diversify(int rank, int size);
 
 };
 

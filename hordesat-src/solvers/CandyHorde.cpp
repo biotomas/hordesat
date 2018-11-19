@@ -10,8 +10,9 @@
 #include "../utilities/DebugUtils.h"
 
 #include "candy/core/CNFProblem.h"
-#include "candy/core/Solver.h"
+
 #include "candy/simp/SimpSolver.h"
+#include "candy/core/CandySolverInterface.h" 
 
 #include "candy/core/ClauseDatabase.h"
 #include "candy/core/Trail.h"
@@ -21,7 +22,6 @@
 #include "candy/core/branching/LRB.h"
 
 using namespace Candy;
-
 
 // Macros for candy literal representation conversion
 #define CANDY_LIT(lit) lit > 0 ? mkLit(lit-1, false) : mkLit((-lit)-1, true)
@@ -36,8 +36,24 @@ std::vector<Candy::Lit> convertLiterals(std::vector<int> int_lits) {
 }
 
 
-CandyHorde::CandyHorde() {
-	solver = new SimpSolver<VSIDS>();
+CandyHorde::CandyHorde() : random_seed(0.4) { //(double _random_seed) : random_seed(_random_seed) {
+	clause_db = new Candy::ClauseDatabase();
+	assignment = new Candy::Trail();
+	propagate = new Candy::Propagate(*clause_db, *assignment);
+	learning = new Candy::ConflictAnalysis(*clause_db, *assignment);
+	if (std::fmod(random_seed, 2.0) < 1.0) {
+		double var_decay = 0.4 + std::fmod(random_seed, 0.59);
+		double max_var_decay = 0.8 + std::fmod(random_seed, 0.19);
+		vsids_branching = new Candy::VSIDS(*clause_db, *assignment, var_decay, max_var_decay);
+		lrb_branching = nullptr;
+		solver = new SimpSolver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, VSIDS>(*clause_db, *assignment, *propagate, *learning, *vsids_branching);
+	}
+	else {
+		double step_size = 0.2 + std::fmod(random_seed, 0.4);
+		lrb_branching = new Candy::LRB(*clause_db, *assignment, step_size);
+		vsids_branching = nullptr;
+		solver = new SimpSolver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, LRB>(*clause_db, *assignment, *propagate, *learning, *lrb_branching);
+	}
 	solver->disablePreprocessing();
 	learnedLimit = 0;
 	myId = 0;
@@ -64,18 +80,22 @@ int CandyHorde::getVariablesCount() {
 
 // Get a variable suitable for search splitting
 int CandyHorde::getSplittingVariable() {
+	return 0;
 	// return solver->lastDecision + 1;
 }
 
 // Set initial phase for a given variable
 void CandyHorde::setPhase(const int var, const bool phase) {
-	solver->getBranchingInterface().setPolarity(var-1, phase);
+	if (vsids_branching != nullptr) {
+		vsids_branching->setPolarity(var-1, phase);
+	}
+	else {
+		lrb_branching->setPolarity(var-1, phase);
+	}
 }
 
 // Diversify the solver
-void CandyHorde::diversify(int rank, int size) {
-	this->random_seed = (double)rank;
-}
+void CandyHorde::diversify(int rank, int size) { }
 
 
 // Interrupt the SAT solving, so it can be started again with new assumptions
