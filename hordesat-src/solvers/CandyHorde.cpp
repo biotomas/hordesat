@@ -31,6 +31,7 @@ std::vector<Candy::Lit> convertLiterals(std::vector<int> int_lits) {
 
 CandyHorde::CandyHorde() {
 	solver = new SimpSolver<VSIDS>();
+	solver->disablePreprocessing();
 	learnedLimit = 0;
 	myId = 0;
 	callback = NULL;

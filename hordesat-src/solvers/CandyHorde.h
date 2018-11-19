@@ -11,21 +11,20 @@
 
 #include "PortfolioSolverInterface.h"
 #include "../utilities/Threading.h"
-#include "candy/simp/SimpSolver.h" 
+
+#include "candy/simp/SimpSolver.h"
+#include "candy/core/CandySolverInterface.h" 
 
 #define CLS_COUNT_INTERRUPT_LIMIT 300
 
-// some forward declatarations for Minisat
 namespace Candy {
 	class Lit;
-	template<class T, class _Size> class vec;
 }
-
 
 class CandyHorde : public PortfolioSolverInterface {
 
 private:
-	Candy::SimpSolver<Candy::VSIDS>* solver;
+	Candy::CandySolverInterface* solver;
 
 	std::vector< std::vector<int> > learnedClausesToAdd;
 	std::vector< std::vector<int> > clausesToAdd;
