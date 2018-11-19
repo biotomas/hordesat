@@ -13,6 +13,13 @@
 #include "candy/core/Solver.h"
 #include "candy/simp/SimpSolver.h"
 
+#include "candy/core/ClauseDatabase.h"
+#include "candy/core/Trail.h"
+#include "candy/core/Propagate.h"
+#include "candy/core/ConflictAnalysis.h"
+#include "candy/core/branching/VSIDS.h"
+#include "candy/core/branching/LRB.h"
+
 using namespace Candy;
 
 
