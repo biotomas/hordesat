@@ -1,0 +1,6 @@
+*.o
+*.zip
+.vscode/
+lingeling/
+minisat/
+/hordesat

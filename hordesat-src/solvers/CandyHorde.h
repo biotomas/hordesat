@@ -11,21 +11,29 @@
 
 #include "PortfolioSolverInterface.h"
 #include "../utilities/Threading.h"
-#include "candy/simp/SimpSolver.h" 
 
 #define CLS_COUNT_INTERRUPT_LIMIT 300
 
-// some forward declatarations for Minisat
 namespace Candy {
 	class Lit;
-	template<class T, class _Size> class vec;
+	class CandySolverInterface;
+	class ClauseDatabase;
+	class Trail;
+	class Propagate;
+ 	class ConflictAnalysis;
+	class BranchingDiversificationInterface;
 }
-
 
 class CandyHorde : public PortfolioSolverInterface {
 
 private:
-	Candy::SimpSolver<Candy::VSIDS>* solver;
+	Candy::ClauseDatabase* clause_db;
+	Candy::Trail* assignment;
+	Candy::Propagate* propagate;
+	Candy::ConflictAnalysis* learning;
+	Candy::BranchingDiversificationInterface* branching;
+
+	Candy::CandySolverInterface* solver;
 
 	std::vector< std::vector<int> > learnedClausesToAdd;
 	std::vector< std::vector<int> > clausesToAdd;
@@ -38,6 +46,9 @@ private:
 public:
 	int myId;
 	LearnedClauseCallback* callback;
+
+	CandyHorde(int rank, int size);
+	virtual ~CandyHorde();
 
 	bool loadFormula(const char* filename);
 	//Get the number of variables of the formula
@@ -72,13 +83,6 @@ public:
 
 	// Get solver statistics
 	SolvingStatistics getStatistics();
-	// Diversify
-	void diversify(int rank, int size);
-
-	// constructor
-	CandyHorde(int rank, int size);
-	// destructor
-	virtual ~CandyHorde();
 
 };
 
