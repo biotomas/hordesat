@@ -207,7 +207,7 @@ int main(int argc, char** argv) {
 			}
 		} 
 		else if (params.getParam("s") == "candy") {
-			solvers.push_back(new CandyHorde());
+			solvers.push_back(new CandyHorde(mpi_rank*solversCount+i, mpi_size * solversCount));
 			log(1, "Running Candy on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
 		} 
 		else {

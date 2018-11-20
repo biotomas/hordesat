@@ -29,7 +29,7 @@ std::vector<Candy::Lit> convertLiterals(std::vector<int> int_lits) {
 }
 
 
-CandyHorde::CandyHorde() {
+CandyHorde::CandyHorde(int rank, int size) {
 	solver = new SimpSolver<VSIDS>();
 	learnedLimit = 0;
 	myId = 0;

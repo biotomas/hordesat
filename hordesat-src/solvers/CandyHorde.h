@@ -76,7 +76,7 @@ public:
 	void diversify(int rank, int size);
 
 	// constructor
-	CandyHorde();
+	CandyHorde(int rank, int size);
 	// destructor
 	virtual ~CandyHorde();
 
