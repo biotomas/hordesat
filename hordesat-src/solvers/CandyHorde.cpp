@@ -79,18 +79,12 @@ int CandyHorde::getVariablesCount() {
 
 // Get a variable suitable for search splitting
 int CandyHorde::getSplittingVariable() {
-	return 0;
-	// return solver->lastDecision + 1;
+	return var(branching->getLastDecision()) + 1;
 }
 
 // Set initial phase for a given variable
 void CandyHorde::setPhase(const int var, const bool phase) {
-	if (vsids_branching != nullptr) {
-		vsids_branching->setPolarity(var-1, phase);
-	}
-	else {
-		lrb_branching->setPolarity(var-1, phase);
-	}
+	branching->setPolarity(var-1, phase);
 }
 
 // Diversify the solver
