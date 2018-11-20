@@ -2,6 +2,8 @@ WSPACE = 	..
 
 CANDYSRC = 	$(WSPACE)/candy/src
 CANDYBIN =	$(WSPACE)/candy/build
+#CANDYSRC = 	/home/markus/git/candy/src
+#CANDYBIN = 	/home/markus/git/candy/build-debug
 MINISRC = 	$(WSPACE)/minisat
 MINIBIN = 	$(WSPACE)/minisat/build/release/lib
 LGLSRC = 	$(WSPACE)/lingeling

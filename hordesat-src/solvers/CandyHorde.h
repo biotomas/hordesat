@@ -39,7 +39,7 @@ private:
 	std::vector< std::vector<int> > clausesToAdd;
 	Mutex clauseAddingLock;
 	int learnedLimit;
-	double random_seed;
+	int random_seed;
 	friend void learnCallback(const std::vector<Candy::Lit,int>& cls, void* issuer);
 	friend std::vector<Candy::Lit> convertLiterals(std::vector<int> int_lits);
 
@@ -49,6 +49,8 @@ public:
 
 	CandyHorde(int rank, int size);
 	virtual ~CandyHorde();
+
+	void diversify(int rank, int size) {}
 
 	bool loadFormula(const char* filename);
 	//Get the number of variables of the formula

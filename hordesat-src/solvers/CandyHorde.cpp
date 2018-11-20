@@ -41,15 +41,15 @@ CandyHorde::CandyHorde(int rank, int size) : random_seed(rank) {
 	assignment = new Candy::Trail();
 	propagate = new Candy::Propagate(*clause_db, *assignment);
 	learning = new Candy::ConflictAnalysis(*clause_db, *assignment);
-	if (std::fmod(random_seed, 2.0) < 1.0) {
-		double var_decay = 0.4 + std::fmod(random_seed, 0.59);
-		double max_var_decay = 0.8 + std::fmod(random_seed, 0.19);
+	if (random_seed % 2 == 0) {
+		double var_decay = 0.8;
+		double max_var_decay = 0.95;
 		VSIDS* vsids = new Candy::VSIDS(*clause_db, *assignment, var_decay, max_var_decay);
 		branching = vsids;
 		solver = new SimpSolver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, VSIDS>(*clause_db, *assignment, *propagate, *learning, *vsids);
 	}
 	else {
-		double step_size = 0.2 + std::fmod(random_seed, 0.4);
+		double step_size = 0.4;
 		LRB* lrb = new Candy::LRB(*clause_db, *assignment, step_size);
 		branching = lrb;
 		solver = new SimpSolver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, LRB>(*clause_db, *assignment, *propagate, *learning, *lrb);
@@ -86,10 +86,6 @@ int CandyHorde::getSplittingVariable() {
 void CandyHorde::setPhase(const int var, const bool phase) {
 	branching->setPolarity(var-1, phase);
 }
-
-// Diversify the solver
-void CandyHorde::diversify(int rank, int size) { }
-
 
 // Interrupt the SAT solving, so it can be started again with new assumptions
 void CandyHorde::setSolverInterrupt() {
