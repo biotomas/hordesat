@@ -36,7 +36,7 @@ std::vector<Candy::Lit> convertLiterals(std::vector<int> int_lits) {
 	return candy_clause;
 }
 
-CandyHorde::CandyHorde() : random_seed(0.4) { //(double _random_seed) : random_seed(_random_seed) {
+CandyHorde::CandyHorde(int rank, int size) : random_seed(rank) { 
 	clause_db = new Candy::ClauseDatabase();
 	assignment = new Candy::Trail();
 	propagate = new Candy::Propagate(*clause_db, *assignment);

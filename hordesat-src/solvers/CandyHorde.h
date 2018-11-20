@@ -47,8 +47,7 @@ public:
 	int myId;
 	LearnedClauseCallback* callback;
 
-	CandyHorde();
-	// CandyHorde(double _random_seed);
+	CandyHorde(int rank, int size);
 	virtual ~CandyHorde();
 
 	bool loadFormula(const char* filename);
@@ -84,8 +83,6 @@ public:
 
 	// Get solver statistics
 	SolvingStatistics getStatistics();
-
-	void diversify(int rank, int size);
 
 };
 
