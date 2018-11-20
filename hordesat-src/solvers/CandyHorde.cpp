@@ -18,6 +18,7 @@
 #include "candy/core/Trail.h"
 #include "candy/core/Propagate.h"
 #include "candy/core/ConflictAnalysis.h"
+#include "candy/core/branching/BranchingDiversificationInterface.h"
 #include "candy/core/branching/VSIDS.h"
 #include "candy/core/branching/LRB.h"
 
@@ -35,7 +36,6 @@ std::vector<Candy::Lit> convertLiterals(std::vector<int> int_lits) {
 	return candy_clause;
 }
 
-
 CandyHorde::CandyHorde() : random_seed(0.4) { //(double _random_seed) : random_seed(_random_seed) {
 	clause_db = new Candy::ClauseDatabase();
 	assignment = new Candy::Trail();
@@ -44,15 +44,15 @@ CandyHorde::CandyHorde() : random_seed(0.4) { //(double _random_seed) : random_s
 	if (std::fmod(random_seed, 2.0) < 1.0) {
 		double var_decay = 0.4 + std::fmod(random_seed, 0.59);
 		double max_var_decay = 0.8 + std::fmod(random_seed, 0.19);
-		vsids_branching = new Candy::VSIDS(*clause_db, *assignment, var_decay, max_var_decay);
-		lrb_branching = nullptr;
-		solver = new SimpSolver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, VSIDS>(*clause_db, *assignment, *propagate, *learning, *vsids_branching);
+		VSIDS* vsids = new Candy::VSIDS(*clause_db, *assignment, var_decay, max_var_decay);
+		branching = vsids;
+		solver = new SimpSolver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, VSIDS>(*clause_db, *assignment, *propagate, *learning, *vsids);
 	}
 	else {
 		double step_size = 0.2 + std::fmod(random_seed, 0.4);
-		lrb_branching = new Candy::LRB(*clause_db, *assignment, step_size);
-		vsids_branching = nullptr;
-		solver = new SimpSolver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, LRB>(*clause_db, *assignment, *propagate, *learning, *lrb_branching);
+		LRB* lrb = new Candy::LRB(*clause_db, *assignment, step_size);
+		branching = lrb;
+		solver = new SimpSolver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, LRB>(*clause_db, *assignment, *propagate, *learning, *lrb);
 	}
 	solver->disablePreprocessing();
 	learnedLimit = 0;
@@ -63,7 +63,6 @@ CandyHorde::CandyHorde() : random_seed(0.4) { //(double _random_seed) : random_s
 CandyHorde::~CandyHorde() {
 	delete solver;
 }
-
 
 bool CandyHorde::loadFormula(const char* filename) {
 	CNFProblem problem{};

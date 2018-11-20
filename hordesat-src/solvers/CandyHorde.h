@@ -21,8 +21,7 @@ namespace Candy {
 	class Trail;
 	class Propagate;
  	class ConflictAnalysis;
-	class VSIDS;
-	class LRB;
+	class BranchingDiversificationInterface;
 }
 
 class CandyHorde : public PortfolioSolverInterface {
@@ -32,8 +31,7 @@ private:
 	Candy::Trail* assignment;
 	Candy::Propagate* propagate;
 	Candy::ConflictAnalysis* learning;
-	Candy::VSIDS* vsids_branching;
-	Candy::LRB* lrb_branching;
+	Candy::BranchingDiversificationInterface* branching;
 
 	Candy::CandySolverInterface* solver;
 
