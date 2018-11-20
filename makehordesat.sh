@@ -1,5 +1,3 @@
-rm *.zip
-
 # get minisat and patch it
 if [ ! -d minisat ]; then
   wget https://github.com/niklasso/minisat/archive/master.zip
