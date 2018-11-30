@@ -54,7 +54,7 @@ CandyHorde::CandyHorde(int rank, int size) : random_seed(rank) {
 		branching = lrb;
 		solver = new SimpSolver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, LRB>(*clause_db, *assignment, *propagate, *learning, *lrb);
 	}
-	solver->disablePreprocessing();
+	//solver->disablePreprocessing();
 	learnedLimit = 0;
 	myId = 0;
 	callback = NULL;
