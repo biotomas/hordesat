@@ -349,6 +349,7 @@ int main(int argc, char** argv) {
 			globShareStats.sharedClauses/searchTime, globShareStats.importedClauses/searchTime, globShareStats.filteredClauses/searchTime, globShareStats.dropped/searchTime);
 		// Logging Conventions:
 		log(0, "c CPU %.2f\n", searchTime);
+		log(0, "c conflicts %lu (%.2f)\n", globSolveStats.conflicts, globSolveStats.conflicts/searchTime);
 		if (globalResult > 0) {
 			if (globalResult == 10) log(0, "s SATISFIABLE\n");
 			if (globalResult == 20) log(0, "s UNSATISFIABLE\n");
