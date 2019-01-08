@@ -31,12 +31,10 @@ CandyHorde::CandyHorde(int rank, int size) : random_seed(rank) {
 	CandyBuilder<ClauseDatabase<ClauseAllocator>> builder { new ClauseDatabase<ClauseAllocator>(), new Trail() };
 	if (random_seed % 2 == 0) {
 		solver = builder.build();
-		branching = builder.accessBranchingDiversificationInterface();
-	}
-	else {
+	} else {
 		solver = builder.branchWithLRB().build();
-		branching = builder.accessBranchingDiversificationInterface();
 	}
+	branching = solver->accessBranchingInterface();
 	learnedLimit = 0;
 	myId = 0;
 	callback = NULL;
