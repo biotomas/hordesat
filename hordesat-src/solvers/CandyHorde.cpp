@@ -11,16 +11,7 @@
 
 #include "candy/core/CNFProblem.h"
 
-#include "candy/simp/SimpSolver.h"
-#include "candy/core/CandySolverInterface.h" 
-
-#include "candy/core/ClauseDatabase.h"
-#include "candy/core/Trail.h"
-#include "candy/core/Propagate.h"
-#include "candy/core/ConflictAnalysis.h"
-#include "candy/core/branching/BranchingDiversificationInterface.h"
-#include "candy/core/branching/VSIDS.h"
-#include "candy/core/branching/LRB.h"
+#include "candy/frontend/CandyBuilder.h"
 
 using namespace Candy;
 
@@ -37,24 +28,15 @@ std::vector<Candy::Lit> convertLiterals(std::vector<int> int_lits) {
 }
 
 CandyHorde::CandyHorde(int rank, int size) : random_seed(rank) { 
-	clause_db = new Candy::ClauseDatabase();
-	assignment = new Candy::Trail();
-	propagate = new Candy::Propagate(*clause_db, *assignment);
-	learning = new Candy::ConflictAnalysis(*clause_db, *assignment);
+	CandyBuilder<ClauseDatabase<ClauseAllocator>> builder { new ClauseDatabase<ClauseAllocator>(), new Trail() };
 	if (random_seed % 2 == 0) {
-		double var_decay = 0.8;
-		double max_var_decay = 0.95;
-		VSIDS* vsids = new Candy::VSIDS(*clause_db, *assignment, var_decay, max_var_decay);
-		branching = vsids;
-		solver = new SimpSolver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, VSIDS>(*clause_db, *assignment, *propagate, *learning, *vsids);
+		solver = builder.build();
+		branching = builder.accessBranchingDiversificationInterface();
 	}
 	else {
-		double step_size = 0.4;
-		LRB* lrb = new Candy::LRB(*clause_db, *assignment, step_size);
-		branching = lrb;
-		solver = new SimpSolver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, LRB>(*clause_db, *assignment, *propagate, *learning, *lrb);
+		solver = builder.branchWithLRB().build();
+		branching = builder.accessBranchingDiversificationInterface();
 	}
-	//solver->disablePreprocessing();
 	learnedLimit = 0;
 	myId = 0;
 	callback = NULL;
