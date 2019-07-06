@@ -14,7 +14,7 @@ CXXFLAGS =	-O3 -g -std=c++11 -Wall -fmessage-length=0 -I$(MINISRC) -I$(LGLSRC) -
 OBJS =		hordesat.o utilities/ClauseFilter.o solvers/MiniSat.o solvers/CandyHorde.o solvers/Lingeling.o utilities/ClauseDatabase.o \
 			utilities/SatUtils.o utilities/Logger.o sharing/AllToAllSharingManager.o sharing/LogSharingManager.o
 
-LIBS =		-lz -lpthread -L$(MINIBIN) -lminisat -L$(LGLBIN) -llgl -L$(CANDYBIN) -lcandystatic
+LIBS =		-lz -lpthread -L$(MINIBIN) -lminisat -L$(LGLBIN) -llgl -L$(CANDYBIN) -lcandylib
 
 TARGET =	hordesat
 

@@ -30,6 +30,9 @@ private:
 	friend void learnCallback(const std::vector<Candy::Lit,int>& cls, void* issuer);
 	friend std::vector<Candy::Lit> convertLiterals(std::vector<int> int_lits);
 
+	Candy::CandySolverInterface* initCandyThread(unsigned int num);
+	bool interrupted = false;
+
 public:
 	int myId;
 	LearnedClauseCallback* callback;
@@ -49,6 +52,8 @@ public:
 	// Interrupt the SAT solving, so it can be started again with new assumptions
 	void setSolverInterrupt();
 	void unsetSolverInterrupt();
+	bool isInterrupted();
+	static int interruptedCallback(void* this_pointer);
 
 	// Solve the formula with a given set of assumptions
 	// return 10 for SAT, 20 for UNSAT, 0 for UNKNOWN
