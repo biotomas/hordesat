@@ -11,29 +11,16 @@
 
 #include "PortfolioSolverInterface.h"
 #include "../utilities/Threading.h"
+#include "candy/core/CandySolverInterface.h"
+#include "candy/core/branching/BranchingDiversificationInterface.h"
 
 #define CLS_COUNT_INTERRUPT_LIMIT 300
-
-namespace Candy {
-	class Lit;
-	class CandySolverInterface;
-	class ClauseDatabase;
-	class Trail;
-	class Propagate;
- 	class ConflictAnalysis;
-	class BranchingDiversificationInterface;
-}
 
 class CandyHorde : public PortfolioSolverInterface {
 
 private:
-	Candy::ClauseDatabase* clause_db;
-	Candy::Trail* assignment;
-	Candy::Propagate* propagate;
-	Candy::ConflictAnalysis* learning;
-	Candy::BranchingDiversificationInterface* branching;
-
 	Candy::CandySolverInterface* solver;
+	Candy::BranchingDiversificationInterface* branching;
 
 	std::vector< std::vector<int> > learnedClausesToAdd;
 	std::vector< std::vector<int> > clausesToAdd;
