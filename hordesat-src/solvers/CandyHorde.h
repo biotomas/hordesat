@@ -12,7 +12,7 @@
 #include "PortfolioSolverInterface.h"
 #include "../utilities/Threading.h"
 #include "candy/core/CandySolverInterface.h"
-#include "candy/core/branching/BranchingDiversificationInterface.h"
+#include "candy/systems/branching/BranchingDiversificationInterface.h"
 
 #define CLS_COUNT_INTERRUPT_LIMIT 300
 
