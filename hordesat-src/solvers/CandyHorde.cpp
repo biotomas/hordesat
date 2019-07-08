@@ -45,7 +45,7 @@ Candy::CandySolverInterface* CandyHorde::initCandyThread(unsigned int num) {
 	SolverOptions::opt_sort_watches = ((num % 2) == 0);
 	SolverOptions::opt_preprocessing = (num == 0);
 	SolverOptions::opt_inprocessing = num + SolverOptions::opt_inprocessing;
-	VariableEliminationOptions::opt_use_elim = ((num % 3) == 0);
+	VariableEliminationOptions::opt_use_elim = false;//((num % 3) == 0);
 	VariableEliminationOptions::opt_use_asymm = (num == 6) || (num == 7) || (num == 14) || (num == 15);
 	switch (num) {
 		case 0 : case 1 : //vsids
@@ -139,7 +139,7 @@ int CandyHorde::interruptedCallback(void* this_pointer) {
 SatResult CandyHorde::solve(const vector<int>& assumptions) {
 	clauseAddingLock.lock();
 
-	CNFProblem problem;	
+	CNFProblem problem, learnts;	
 	Cl converted;
 
 	for (std::vector<int> clause : clausesToAdd) {
@@ -150,11 +150,12 @@ SatResult CandyHorde::solve(const vector<int>& assumptions) {
 
 	for (std::vector<int> clause : learnedClausesToAdd) {
 		converted = convertLiterals(clause);
-		problem.readClause(converted);
+		learnts.readClause(converted);
 	}
 	learnedClausesToAdd.clear();
 
-	solver->init(problem);
+	solver->init(problem, nullptr, true); // add lemma clauses
+	solver->init(learnts, nullptr, false); // add learnt clauses
 	clauseAddingLock.unlock();
 
 	converted = convertLiterals(assumptions);
