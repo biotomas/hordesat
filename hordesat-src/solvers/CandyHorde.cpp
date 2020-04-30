@@ -42,7 +42,6 @@ CandyHorde::~CandyHorde() {
 
 Candy::CandySolverInterface* CandyHorde::initCandyThread(unsigned int num) {
 	ClauseDatabaseOptions::opt_recalculate_lbd = false;
-	SolverOptions::opt_sort_watches = ((num % 2) == 0);
 	SolverOptions::opt_preprocessing = (num == 0);
 	SolverOptions::opt_inprocessing = num + SolverOptions::opt_inprocessing;
 	VariableEliminationOptions::opt_use_elim = false;//((num % 3) == 0);
@@ -78,7 +77,6 @@ Candy::CandySolverInterface* CandyHorde::initCandyThread(unsigned int num) {
 			RSILOptions::opt_rsil_enable = false;
 			break;
 		case 12 : case 13 : //rsil
-			GateRecognitionOptions::opt_gr_semantic = true; 
 			RandomSimulationOptions::opt_rs_nrounds = 1048576 * 2;
 			SolverOptions::opt_use_lrb = false;
 			RSILOptions::opt_rsil_enable = true;
@@ -102,7 +100,7 @@ bool CandyHorde::loadFormula(const char* filename) {
 
 //Get the number of variables of the formula
 int CandyHorde::getVariablesCount() {
-	return solver->getStatistics().nVars();
+	return solver->nVars();
 }
 
 
@@ -159,7 +157,7 @@ SatResult CandyHorde::solve(const vector<int>& assumptions) {
 	clauseAddingLock.unlock();
 
 	converted = convertLiterals(assumptions);
-	solver->setAssumptions(converted);
+	solver->getAssignment().setAssumptions(converted);
 
 	lbool res = solver->solve();
 	if (res == l_True) {
