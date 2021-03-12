@@ -65,7 +65,7 @@ void MergeSatBackend::setSolverInterrupt() {
 
 // Diversify the solver
 void MergeSatBackend::diversify(int rank, int size) {
-	solver->random_seed = (double)rank;
+	solver->diversify(rank, size);
 }
 
 void MergeSatBackend::unsetSolverInterrupt() {
