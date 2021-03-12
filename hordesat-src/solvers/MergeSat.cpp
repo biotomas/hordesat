@@ -171,7 +171,7 @@ void MergeSatBackend::addLearnedClauses(vector<vector<int> >& clauses) {
 	}
 }
 
-void miniLearnCallback(const std::vector<int>& cls, void* issuer) {
+void miniLearnCallback(const std::vector<int>& cls, int glueValue, void* issuer) {
 	MergeSatBackend* mp = (MergeSatBackend*)issuer;
 	if (cls.size() > mp->learnedLimit) {
 		return;
@@ -179,9 +179,7 @@ void miniLearnCallback(const std::vector<int>& cls, void* issuer) {
 	if(cls.size() == 0) return;
 	vector<int> ncls;
 	if (cls.size() > 1) {
-		// fake glue value
-		int madeUpGlue = min(3UL, cls.size());
-		ncls.push_back(madeUpGlue);
+		ncls.push_back(glueValue);
 	}
 	for (int i = 0; i < cls.size(); i++) {
 		ncls.push_back(cls[i]);

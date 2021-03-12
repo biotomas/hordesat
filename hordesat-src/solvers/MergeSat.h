@@ -39,7 +39,7 @@ private:
 	int myId;
 	LearnedClauseCallback* callback;
 	int learnedLimit;
-	friend void miniLearnCallback(const std::vector<int>& cls, void* issuer);
+	friend void miniLearnCallback(const std::vector<int>& cls, int glueValue, void* issuer);
 
 public:
 
