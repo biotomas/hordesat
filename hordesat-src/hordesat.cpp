@@ -7,7 +7,7 @@
 //============================================================================
 
 #include "solvers/CandyHorde.h"
-#include "solvers/MiniSat.h"
+#include "solvers/MergeSat.h"
 #include "solvers/Lingeling.h"
 #include "utilities/DebugUtils.h"
 #include "utilities/Threading.h"
@@ -166,9 +166,9 @@ int main(int argc, char** argv) {
 		puts("        -fd\t\t filter duplicate clauses.");
 		puts("        -c=<INT>\t use that many cores on each mpi node, default is 1.");
 		puts("        -v=<INT>\t verbosity level, higher means more messages, default is 1.");
-		puts("        -s=minisat\t use minisat instead of lingeling");
+		puts("        -s=mergesat\t use mergesat instead of lingeling");
 		puts("        -s=candy\t use candy instead of lingeling");
-		puts("        -s=combo\t use both minisat and lingeling");
+		puts("        -s=combo\t use both mergesat and lingeling");
 		puts("        -r=<INT>\t max number of rounds (~timelimit in seconds), default is unlimited.");
 		puts("        -i=<INT>\t communication interval in miliseconds, default is 1000.");
 		puts("        -t=<INT>\t timelimit in seconds, default is unlimited.");
@@ -194,13 +194,13 @@ int main(int argc, char** argv) {
 	solversCount = params.getIntParam("c", 1);
 
 	for (int i = 0; i < solversCount; i++) {
-		if (params.getParam("s") == "minisat") {
-			solvers.push_back(new MiniSat());
-			log(1, "Running MiniSat on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
+		if (params.getParam("s") == "mergesat") {
+			solvers.push_back(new MergeSatBackend());
+			log(1, "Running MergeSat on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
 		} else if (params.getParam("s") == "combo") {
 			if ((mpi_rank + i) % 2 == 0) {
-				solvers.push_back(new MiniSat());
-				log(1, "Running MiniSat on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
+				solvers.push_back(new MergeSatBackend());
+				log(1, "Running MergeSat on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
 			} else {
 				solvers.push_back(new Lingeling());
 				log(1, "Running Lingeling on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
