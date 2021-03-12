@@ -161,7 +161,7 @@ int main(int argc, char** argv) {
 		puts("This is HordeSat ($Revision: 46 $)");
 		puts("USAGE: [mpirun ...] ./hordesat [parameters] input.cnf");
 		puts("Parameters:");
-		puts("        -d=0...7\t diversification 0=none, 1=sparse, 2=dense, 3=random, 4=native(plingeling), 5=1&4, 6=sparse-random, 7=6&4, default is 1.");
+		puts("        -d=0...7\t diversification 0=none, 1=sparse, 2=dense, 3=random, 4=native(plingeling), 5=1&4, 6=sparse-random, 7=6&4, default is 4.");
 		puts("        -e=0,1,2\t clause exchange mode 0=none, 1=all-to-all, 2=log-partners, default is 1.");
 		puts("        -fd\t\t filter duplicate clauses.");
 		puts("        -c=<INT>\t use that many cores on each mpi node, default is 1.");
@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	int diversification = params.getIntParam("d", 1);
+	int diversification = params.getIntParam("d", 4);
 	switch (diversification) {
 	case 1:
 		sparseDiversification(mpi_size, mpi_rank);
