@@ -11,7 +11,7 @@
 #include "minisat/core/Dimacs.h"
 #include "../utilities/DebugUtils.h"
 #include "MergeSat.h"
-#include "minisat/core/Solver.h"
+#include "minisat/simp/SimpSolver.h"
 
 using namespace Minisat; // MergeSat as default still uses Minisat as namespace for compatibility
 
@@ -23,11 +23,11 @@ using namespace Minisat; // MergeSat as default still uses Minisat as namespace 
 
 
 MergeSatBackend::MergeSatBackend() {
-	solver = new MERGESAT_NSPACE::Solver();
+	solver = new MERGESAT_NSPACE::SimpSolver();
 	learnedLimit = 0;
 	myId = 0;
 	callback = NULL;
-	// solver->verbosity = 2;
+	solver->verbosity = 2;
 }
 
 MergeSatBackend::~MergeSatBackend() {

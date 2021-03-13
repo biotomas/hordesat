@@ -23,7 +23,7 @@ using namespace std;
 
 // some forward declatarations for MergeSat
 namespace MERGESAT_NSPACE {
-	class Solver;
+	class SimpSolver;
 	class Lit;
 	template<class T> class vec;
 }
@@ -32,7 +32,7 @@ namespace MERGESAT_NSPACE {
 class MergeSatBackend : public PortfolioSolverInterface {
 
 private:
-	MERGESAT_NSPACE::Solver *solver;
+	MERGESAT_NSPACE::SimpSolver *solver;
 	vector< vector<int> > learnedClausesToAdd;
 	vector< vector<int> > clausesToAdd;
 	Mutex clauseAddingLock;
