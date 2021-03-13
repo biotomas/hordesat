@@ -72,31 +72,39 @@ void MergeSatBackend::unsetSolverInterrupt() {
 	solver->clearInterrupt();
 }
 
+/* add clauses to the solver */
+void MergeSatBackend::addInternalClausesToSolver () {
+	vec<Lit> mcls;
+	for (size_t ind = 0; ind < clausesToAdd.size(); ind++) {
+		mcls.clear();
+		MAKE_MINI_VEC(clausesToAdd[ind], mcls);
+		if (!solver->addClause(mcls)) {
+			clauseAddingLock.unlock();
+			// printf("unsat when adding cls\n");
+			return;
+		}
+	}
+	if(solver->verbosity>1 && clausesToAdd.size() > 0) printf("c received %lu unit clauses\n", clausesToAdd.size());
+	clausesToAdd.clear();
+	for (size_t ind = 0; ind < learnedClausesToAdd.size(); ind++) {
+		mcls.clear();
+		// skipping the first int containing the glue
+		for(size_t i = 1; i < learnedClausesToAdd[ind].size(); i++) {
+			mcls.push(MINI_LIT(learnedClausesToAdd[ind][i]));
+		}
+		solver->addLearnedClause(mcls);
+	}
+	if(solver->verbosity>1 && learnedClausesToAdd.size() > 0) printf("c received %lu learned clauses\n", learnedClausesToAdd.size());
+	learnedClausesToAdd.clear();
+}
+
 // Solve the formula with a given set of assumptions
 // return 10 for SAT, 20 for UNSAT, 0 for UNKNOWN
 SatResult MergeSatBackend::solve(const vector<int>& assumptions) {
 
 	clauseAddingLock.lock();
 
-	for (size_t ind = 0; ind < clausesToAdd.size(); ind++) {
-		vec<Lit> mcls;
-		MAKE_MINI_VEC(clausesToAdd[ind], mcls);
-		if (!solver->addClause(mcls)) {
-			clauseAddingLock.unlock();
-			printf("unsat when adding cls\n");
-			return UNSAT;
-		}
-	}
-	clausesToAdd.clear();
-	for (size_t ind = 0; ind < learnedClausesToAdd.size(); ind++) {
-		vec<Lit> mlcls;
-		// skipping the first int containing the glue
-		for(size_t i = 1; i < learnedClausesToAdd[ind].size(); i++) {
-			mlcls.push(MINI_LIT(learnedClausesToAdd[ind][i]));
-		}
-		solver->addLearnedClause(mlcls);
-	}
-	learnedClausesToAdd.clear();
+	addInternalClausesToSolver();
 	clauseAddingLock.unlock();
 
 	vec<Lit> miniAssumptions;
@@ -166,9 +174,13 @@ void MergeSatBackend::addLearnedClauses(vector<vector<int> >& clauses) {
 		}
 	}
 	clauseAddingLock.unlock();
+
+	/*
+	// this will be picked up by the solver without restarting it
 	if (learnedClausesToAdd.size() > CLS_COUNT_INTERRUPT_LIMIT || clausesToAdd.size() > 0) {
 		setSolverInterrupt();
 	}
+	*/
 }
 
 void miniLearnCallback(const std::vector<int>& cls, int glueValue, void* issuer) {
@@ -187,9 +199,26 @@ void miniLearnCallback(const std::vector<int>& cls, int glueValue, void* issuer)
 	mp->callback->processClause(ncls, mp->myId);
 }
 
+void consumeSharedCls(void* issuer) {
+	MergeSatBackend* mp = (MergeSatBackend*)issuer;
+
+	if (mp->learnedClausesToAdd.empty()) {
+		return;
+	}
+	if (mp->clauseAddingLock.tryLock() == false) {
+		return;
+	}
+
+	/* add clauses to the current solver */
+	mp->addInternalClausesToSolver();
+
+	mp->clauseAddingLock.unlock();
+}
+
 void MergeSatBackend::setLearnedClauseCallback(LearnedClauseCallback* callback, int solverId) {
 	this->callback = callback;
 	solver->learnedClsCallback = miniLearnCallback;
+	solver->consumeSharedCls = consumeSharedCls;
 	solver->issuer = this;
 	learnedLimit = 3;
 	myId = solverId;

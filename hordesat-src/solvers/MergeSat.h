@@ -40,6 +40,7 @@ private:
 	LearnedClauseCallback* callback;
 	int learnedLimit;
 	friend void miniLearnCallback(const std::vector<int>& cls, int glueValue, void* issuer);
+	friend void consumeSharedCls(void* issuer);
 
 public:
 
@@ -78,6 +79,8 @@ public:
 	SolvingStatistics getStatistics();
 	// Diversify
 	void diversify(int rank, int size);
+
+	void addInternalClausesToSolver();
 
 	// constructor
 	MergeSatBackend();
