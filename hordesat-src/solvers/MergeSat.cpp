@@ -27,7 +27,7 @@ MergeSatBackend::MergeSatBackend() {
 	learnedLimit = 0;
 	myId = 0;
 	callback = NULL;
-	solver->verbosity = 2;
+	// solver->verbosity = 2;
 }
 
 MergeSatBackend::~MergeSatBackend() {
