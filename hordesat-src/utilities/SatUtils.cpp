@@ -45,6 +45,13 @@ class Formula
 			cls[i] = (MERGESAT_NSPACE::sign(l) ? -MERGESAT_NSPACE::var(l) - 1 : MERGESAT_NSPACE::var(l) + 1);
 		}
 	}
+
+	/* function stubs to make the parser interface of MergeSat happy */
+	void eliminate(bool enable) {(void)enable;}
+
+	int max_simp_cls() {return INT32_MAX;}
+
+	void reserveVars(MERGESAT_NSPACE::Var vars) {(void)vars;}
 };
 
 
