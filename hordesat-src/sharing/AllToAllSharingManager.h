@@ -14,8 +14,9 @@
 #include "../utilities/ClauseFilter.h"
 #include "../utilities/ParameterProcessor.h"
 
-
-#define COMM_BUFFER_SIZE 1500
+#ifndef COMM_BUFFER_SIZE
+#define COMM_BUFFER_SIZE 4500
+#endif
 
 class AllToAllSharingManager : public SharingManagerInterface {
 

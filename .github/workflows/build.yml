@@ -1,0 +1,21 @@
+name: Build on Linux
+
+on: [push]
+
+jobs:
+  Linux:
+
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Install Packages
+      run: sudo apt-get install zlib1g-dev make
+
+    - uses: actions/checkout@v1
+
+    - name: submodules
+      run: git submodule update --init --recursive
+
+    - name: mergesat build
+      run: make -C hordesat-src
+

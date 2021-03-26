@@ -1,3 +1,5 @@
+// Copyright (c) 2015 Tomas Balyo, Karlsruhe Institute of Technology
+// Copyright (c) 2021 Norbert Manthey
 /*
  * MiniSat.cpp
  *
@@ -8,10 +10,10 @@
 #include "minisat/utils/System.h"
 #include "minisat/core/Dimacs.h"
 #include "../utilities/DebugUtils.h"
-#include "MiniSat.h"
-#include "minisat/core/Solver.h"
+#include "MergeSat.h"
+#include "minisat/simp/SimpSolver.h"
 
-using namespace Minisat;
+using namespace Minisat; // MergeSat as default still uses Minisat as namespace for compatibility
 
 
 // Macros for minisat literal representation conversion
@@ -20,82 +22,89 @@ using namespace Minisat;
 #define MAKE_MINI_VEC(vec, miniVec) for(size_t i=0; i<vec.size(); i++)	miniVec.push(MINI_LIT(vec[i]))
 
 
-MiniSat::MiniSat() {
-	solver = new Solver();
+MergeSatBackend::MergeSatBackend() {
+	solver = new MERGESAT_NSPACE::SimpSolver();
 	learnedLimit = 0;
 	myId = 0;
 	callback = NULL;
+	// solver->verbosity = 2;
 }
 
-MiniSat::~MiniSat() {
+MergeSatBackend::~MergeSatBackend() {
 	delete solver;
 }
 
 
-bool MiniSat::loadFormula(const char* filename) {
-    gzFile in = gzopen(filename, "rb");
+bool MergeSatBackend::loadFormula(const char* filename) {
+    FILE *in = open_to_read_file(filename);
     parse_DIMACS(in, *solver);
-    gzclose(in);
+    fclose(in);
     return true;
 }
 
 //Get the number of variables of the formula
-int MiniSat::getVariablesCount() {
+int MergeSatBackend::getVariablesCount() {
 	return solver->nVars();
 }
 
 // Get a variable suitable for search splitting
-int MiniSat::getSplittingVariable() {
+int MergeSatBackend::getSplittingVariable() {
 	return solver->lastDecision + 1;
 }
 
 
 // Set initial phase for a given variable
-void MiniSat::setPhase(const int var, const bool phase) {
-	solver->setPolarity(var-1, phase ? l_True : l_False);
+void MergeSatBackend::setPhase(const int var, const bool phase) {
+	solver->setPolarity(var-1, !phase);
 }
 
 // Interrupt the SAT solving, so it can be started again with new assumptions
-void MiniSat::setSolverInterrupt() {
+void MergeSatBackend::setSolverInterrupt() {
 	solver->interrupt();
 }
-void MiniSat::unsetSolverInterrupt() {
+
+// Diversify the solver
+void MergeSatBackend::diversify(int rank, int size) {
+	solver->diversify(rank, size);
+}
+
+void MergeSatBackend::unsetSolverInterrupt() {
 	solver->clearInterrupt();
 }
 
-vector<int> MiniSat::getSolution() {
-	throw logic_error("not implemented");
-}
-
-set<int> MiniSat::getFailedAssumptions() {
-	throw logic_error("not implemented");
+/* add clauses to the solver */
+void MergeSatBackend::addInternalClausesToSolver () {
+	vec<Lit> mcls;
+	for (size_t ind = 0; ind < clausesToAdd.size(); ind++) {
+		mcls.clear();
+		MAKE_MINI_VEC(clausesToAdd[ind], mcls);
+		if (!solver->addClause(mcls)) {
+			clauseAddingLock.unlock();
+			// printf("unsat when adding cls\n");
+			return;
+		}
+	}
+	if(solver->verbosity>1 && clausesToAdd.size() > 0) printf("c received %lu unit clauses\n", clausesToAdd.size());
+	clausesToAdd.clear();
+	for (size_t ind = 0; ind < learnedClausesToAdd.size(); ind++) {
+		mcls.clear();
+		// skipping the first int containing the glue
+		for(size_t i = 1; i < learnedClausesToAdd[ind].size(); i++) {
+			mcls.push(MINI_LIT(learnedClausesToAdd[ind][i]));
+		}
+		solver->addLearnedClause(mcls);
+	}
+	if(solver->verbosity>1 && learnedClausesToAdd.size() > 0) printf("c received %lu learned clauses\n", learnedClausesToAdd.size());
+	learnedClausesToAdd.clear();
 }
 
 // Solve the formula with a given set of assumptions
 // return 10 for SAT, 20 for UNSAT, 0 for UNKNOWN
-SatResult MiniSat::solve(const vector<int>& assumptions) {
+SatResult MergeSatBackend::solve(const vector<int>& assumptions) {
 
 	clauseAddingLock.lock();
 
-	for (size_t ind = 0; ind < clausesToAdd.size(); ind++) {
-		vec<Lit> mcls;
-		MAKE_MINI_VEC(clausesToAdd[ind], mcls);
-		if (!solver->addClause(mcls)) {
-			clauseAddingLock.unlock();
-			printf("unsat when adding cls\n");
-			return UNSAT;
-		}
-	}
-	clausesToAdd.clear();
-	for (size_t ind = 0; ind < learnedClausesToAdd.size(); ind++) {
-		vec<Lit> mlcls;
-		// skipping the first int containing the glue
-		for(size_t i = 1; i < learnedClausesToAdd[ind].size(); i++) {
-			mlcls.push(MINI_LIT(learnedClausesToAdd[ind][i]));
-		}
-		solver->addLearnedClause(mlcls);
-	}
-	learnedClausesToAdd.clear();
+	addInternalClausesToSolver();
 	clauseAddingLock.unlock();
 
 	vec<Lit> miniAssumptions;
@@ -110,20 +119,14 @@ SatResult MiniSat::solve(const vector<int>& assumptions) {
 	return UNKNOWN;
 }
 
-void MiniSat::addLiteral(int lit) {
-	puts("Function not implemented!");
-	exit(1);
-}
-
-
-void MiniSat::addClause(vector<int>& clause) {
+void MergeSatBackend::addClause(vector<int>& clause) {
 	clauseAddingLock.lock();
 	clausesToAdd.push_back(clause);
 	clauseAddingLock.unlock();
 	setSolverInterrupt();
 }
 
-void MiniSat::addLearnedClause(vector<int>& clause) {
+void MergeSatBackend::addLearnedClause(vector<int>& clause) {
 	clauseAddingLock.lock();
 	if (clause.size() == 1) {
 		clausesToAdd.push_back(clause);
@@ -136,16 +139,17 @@ void MiniSat::addLearnedClause(vector<int>& clause) {
 	}
 }
 
-void MiniSat::addClauses(vector<vector<int> >& clauses) {
+void MergeSatBackend::addClauses(vector<vector<int> >& clauses) {
 	clauseAddingLock.lock();
 	clausesToAdd.insert(clausesToAdd.end(), clauses.begin(), clauses.end());
 	clauseAddingLock.unlock();
 	setSolverInterrupt();
 }
 
-void MiniSat::addInitialClauses(vector<vector<int> >& clauses) {
+void MergeSatBackend::addInitialClauses(vector<vector<int> >& clauses) {
+	vec<Lit> mcls;
 	for (size_t ind = 0; ind < clauses.size(); ind++) {
-		vec<Lit> mcls;
+		mcls.clear();
 		for (size_t i = 0; i < clauses[ind].size(); i++) {
 			int lit = clauses[ind][i];
 			int var = abs(lit);
@@ -160,7 +164,7 @@ void MiniSat::addInitialClauses(vector<vector<int> >& clauses) {
 	}
 }
 
-void MiniSat::addLearnedClauses(vector<vector<int> >& clauses) {
+void MergeSatBackend::addLearnedClauses(vector<vector<int> >& clauses) {
 	clauseAddingLock.lock();
 	for (size_t i = 0; i < clauses.size(); i++) {
 		if (clauses[i].size() == 1) {
@@ -170,45 +174,61 @@ void MiniSat::addLearnedClauses(vector<vector<int> >& clauses) {
 		}
 	}
 	clauseAddingLock.unlock();
+
+	/*
+	// this will be picked up by the solver without restarting it
 	if (learnedClausesToAdd.size() > CLS_COUNT_INTERRUPT_LIMIT || clausesToAdd.size() > 0) {
 		setSolverInterrupt();
 	}
+	*/
 }
 
-void miniLearnCallback(const vec<Lit>& cls, void* issuer) {
-	MiniSat* mp = (MiniSat*)issuer;
+void miniLearnCallback(const std::vector<int>& cls, int glueValue, void* issuer) {
+	MergeSatBackend* mp = (MergeSatBackend*)issuer;
 	if (cls.size() > mp->learnedLimit) {
 		return;
 	}
+	if(cls.size() == 0) return;
 	vector<int> ncls;
 	if (cls.size() > 1) {
-		// fake glue value
-		int madeUpGlue = min(3, cls.size());
-		ncls.push_back(madeUpGlue);
+		ncls.push_back(glueValue);
 	}
 	for (int i = 0; i < cls.size(); i++) {
-		ncls.push_back(INT_LIT(cls[i]));
+		ncls.push_back(cls[i]);
 	}
 	mp->callback->processClause(ncls, mp->myId);
 }
 
-void MiniSat::setLearnedClauseCallback(LearnedClauseCallback* callback, int solverId) {
+void consumeSharedCls(void* issuer) {
+	MergeSatBackend* mp = (MergeSatBackend*)issuer;
+
+	if (mp->learnedClausesToAdd.empty()) {
+		return;
+	}
+	if (mp->clauseAddingLock.tryLock() == false) {
+		return;
+	}
+
+	/* add clauses to the current solver */
+	mp->addInternalClausesToSolver();
+
+	mp->clauseAddingLock.unlock();
+}
+
+void MergeSatBackend::setLearnedClauseCallback(LearnedClauseCallback* callback, int solverId) {
 	this->callback = callback;
 	solver->learnedClsCallback = miniLearnCallback;
+	solver->consumeSharedCls = consumeSharedCls;
 	solver->issuer = this;
 	learnedLimit = 3;
 	myId = solverId;
 }
 
-void MiniSat::increaseClauseProduction() {
+void MergeSatBackend::increaseClauseProduction() {
 	learnedLimit++;
 }
 
-void MiniSat::diversify(int rank, int size) {
-	solver->random_seed = rank;
-}
-
-SolvingStatistics MiniSat::getStatistics() {
+SolvingStatistics MergeSatBackend::getStatistics() {
 	SolvingStatistics st;
 	st.conflicts = solver->conflicts;
 	st.propagations = solver->propagations;

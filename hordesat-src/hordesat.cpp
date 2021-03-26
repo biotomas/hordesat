@@ -6,10 +6,15 @@
 // Date        : $Date: 2015-04-09 16:14:19 +0200 (Thu, 09 Apr 2015) $
 //============================================================================
 
+#ifdef USE_CANDY
 #include "solvers/CandyHorde.h"
-#include "solvers/MiniSat.h"
+#endif
+#include "solvers/MergeSat.h"
+#ifdef USE_LGL
 #include "solvers/Lingeling.h"
+#endif
 #include "utilities/DebugUtils.h"
+#include "utilities/SatUtils.h"
 #include "utilities/Threading.h"
 #include "utilities/ParameterProcessor.h"
 #include "sharing/AllToAllSharingManager.h"
@@ -161,14 +166,20 @@ int main(int argc, char** argv) {
 		puts("This is HordeSat ($Revision: 46 $)");
 		puts("USAGE: [mpirun ...] ./hordesat [parameters] input.cnf");
 		puts("Parameters:");
-		puts("        -d=0...7\t diversification 0=none, 1=sparse, 2=dense, 3=random, 4=native(plingeling), 5=1&4, 6=sparse-random, 7=6&4, default is 1.");
+		puts("        -d=0...7\t diversification 0=none, 1=sparse, 2=dense, 3=random, 4=native(plingeling), 5=1&4, 6=sparse-random, 7=6&4, default is 4.");
 		puts("        -e=0,1,2\t clause exchange mode 0=none, 1=all-to-all, 2=log-partners, default is 1.");
 		puts("        -fd\t\t filter duplicate clauses.");
 		puts("        -c=<INT>\t use that many cores on each mpi node, default is 1.");
 		puts("        -v=<INT>\t verbosity level, higher means more messages, default is 1.");
-		puts("        -s=minisat\t use minisat instead of lingeling");
+		#ifdef USE_LGL
+		puts("        -s=lingeling\t use lingeling instead of mergesat");
+		#endif
+		#ifdef USE_CANDY
 		puts("        -s=candy\t use candy instead of lingeling");
-		puts("        -s=combo\t use both minisat and lingeling");
+		#endif
+		#ifdef USE_LGL
+		puts("        -s=combo\t use both mergesat and lingeling");
+		#endif
 		puts("        -r=<INT>\t max number of rounds (~timelimit in seconds), default is unlimited.");
 		puts("        -i=<INT>\t communication interval in miliseconds, default is 1000.");
 		puts("        -t=<INT>\t timelimit in seconds, default is unlimited.");
@@ -194,25 +205,33 @@ int main(int argc, char** argv) {
 	solversCount = params.getIntParam("c", 1);
 
 	for (int i = 0; i < solversCount; i++) {
-		if (params.getParam("s") == "minisat") {
-			solvers.push_back(new MiniSat());
-			log(1, "Running MiniSat on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
-		} else if (params.getParam("s") == "combo") {
+		#ifdef USE_LGL
+		if (params.getParam("s") == "lingeling") {
+			solvers.push_back(new Lingeling());
+			log(1, "Running Lingeling on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
+		}
+		else if (params.getParam("s") == "combo") {
 			if ((mpi_rank + i) % 2 == 0) {
-				solvers.push_back(new MiniSat());
-				log(1, "Running MiniSat on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
+				solvers.push_back(new MergeSatBackend());
+				log(1, "Running MergeSat on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
 			} else {
 				solvers.push_back(new Lingeling());
 				log(1, "Running Lingeling on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
 			}
-		} 
+		}
+		#endif
+		#ifdef USE_CANDY
 		else if (params.getParam("s") == "candy") {
 			solvers.push_back(new CandyHorde(mpi_rank*solversCount+i, mpi_size * solversCount));
 			log(1, "Running Candy on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
 		} 
-		else {
-			solvers.push_back(new Lingeling());
-			log(1, "Running Lingeling on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
+		#endif
+		#if defined(USE_LGL) || defined(USE_CANDY)
+		else
+		#endif
+		{
+			solvers.push_back(new MergeSatBackend());
+			log(1, "Running MergeSat on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
 		}
 	}
 
@@ -234,7 +253,7 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	int diversification = params.getIntParam("d", 1);
+	int diversification = params.getIntParam("d", 4);
 	switch (diversification) {
 	case 1:
 		sparseDiversification(mpi_size, mpi_rank);

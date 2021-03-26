@@ -1,73 +1,65 @@
+// Copyright (c) 2015 Tomas Balyo, Karlsruhe Institute of Technology
+// Copyright (c) 2021 Norbert Manthey
 /*
- * Lingeling.h
+ * MergeSat.h
  *
- *  Created on: Nov 11, 2014
+ *  Created on: Oct 9, 2014
  *      Author: balyo
  */
 
-#ifndef LINGELING_H_
-#define LINGELING_H_
+#ifndef MINISAT_H_
+#define MINISAT_H_
 
-#include "../utilities/SatUtils.h"
 #include "PortfolioSolverInterface.h"
 #include "../utilities/Threading.h"
+using namespace std;
 
-struct LGL;
+#define CLS_COUNT_INTERRUPT_LIMIT 300
 
-class Lingeling: public PortfolioSolverInterface {
+// allow to modify the name of the namespace, if required
+#ifndef MERGESAT_NSPACE
+#define MERGESAT_NSPACE Minisat
+#endif
+
+// some forward declatarations for MergeSat
+namespace MERGESAT_NSPACE {
+	class SimpSolver;
+	class Lit;
+	template<class T> class vec;
+}
+
+
+class MergeSatBackend : public PortfolioSolverInterface {
 
 private:
-	LGL* solver;
-	int stopSolver;
-	LearnedClauseCallback* callback;
-	int glueLimit;
-	Mutex clauseAddMutex;
+	MERGESAT_NSPACE::SimpSolver *solver;
+	vector< vector<int> > learnedClausesToAdd;
+	vector< vector<int> > clausesToAdd;
+	Mutex clauseAddingLock;
 	int myId;
-	int maxvar;
-
-	// callback friends
-	friend int termCallback(void* solverPtr);
-	friend void produce(void* sp, int* cls, int glue);
-	friend void produceUnit(void* sp, int lit);
-	friend void consumeUnits(void* sp, int** start, int** end);
-	friend void consumeCls(void* sp, int** clause, int* glue);
-
-	// clause addition
-	vector<vector<int> > clausesToAdd;
-	vector<vector<int> > learnedClausesToAdd;
-	vector<int> unitsToAdd;
-	vector<int> assumptions;
-	int* unitsBuffer;
-	size_t unitsBufferSize;
-	int* clsBuffer;
-	size_t clsBufferSize;
+	LearnedClauseCallback* callback;
+	int learnedLimit;
+	friend void miniLearnCallback(const std::vector<int>& cls, int glueValue, void* issuer);
+	friend void consumeSharedCls(void* issuer);
 
 public:
 
-	// Load formula from a given dimacs file, return false if failed
 	bool loadFormula(const char* filename);
-
-	// Get the number of variables of the formula
+	//Get the number of variables of the formula
 	int getVariablesCount();
-
 	// Get a variable suitable for search splitting
 	int getSplittingVariable();
-
 	// Set initial phase for a given variable
 	void setPhase(const int var, const bool phase);
-
-	// Interrupt the SAT solving, so it can be started again with new assumptions and added clauses
+	// Interrupt the SAT solving, so it can be started again with new assumptions
 	void setSolverInterrupt();
 	void unsetSolverInterrupt();
 
 	// Solve the formula with a given set of assumptions
+	// return 10 for SAT, 20 for UNSAT, 0 for UNKNOWN
 	SatResult solve(const vector<int>& assumptions);
 
-	vector<int> getSolution();
-	set<int> getFailedAssumptions();
-
 	// Add a (list of) permanent clause(s) to the formula
-	void addLiteral(int lit);
 	void addClause(vector<int>& clause);
 	void addClauses(vector<vector<int> >& clauses);
 	void addInitialClauses(vector<vector<int> >& clauses);
@@ -85,11 +77,17 @@ public:
 
 	// Get solver statistics
 	SolvingStatistics getStatistics();
-
+	// Diversify
 	void diversify(int rank, int size);
 
-	Lingeling();
-	 ~Lingeling();
+	void addInternalClausesToSolver();
+
+	// constructor
+	MergeSatBackend();
+	// destructor
+	virtual ~MergeSatBackend();
+
 };
 
-#endif /* LINGELING_H_ */
+
+#endif /* MINISAT_H_ */
