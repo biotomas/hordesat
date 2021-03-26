@@ -1,0 +1,3 @@
+[submodule "mergesat"]
+	path = mergesat
+	url = https://github.com/conp-solutions/mergesat.git
