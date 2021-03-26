@@ -18,6 +18,11 @@ OBJS =		hordesat.o utilities/ClauseFilter.o solvers/MergeSat.o solvers/CandyHord
 
 LIBS =		-L$(MINIBIN) -lmergesat -L$(LGLBIN) -llgl -L$(CANDYBIN) -lcandylib -lz -lpthread
 
+$(WSPACE)/mergesat/build/release/lib/libmergesat.a:
+		$(MAKE) -C $(WSPACE)/mergesat lr ld
+
+hordesat: $(WSPACE)/mergesat/build/release/lib/libmergesat.a
+
 TARGET =	hordesat
 
 CXX = 		mpic++
