@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include "utilities/Logger.h"
 
+#include <sys/sysinfo.h> // get number of available cores
 
 ParameterProcessor params;
 vector<PortfolioSolverInterface*> solvers;
@@ -35,6 +36,8 @@ int solversCount = 0;
 bool solvingDoneLocal = false;
 SatResult finalResult = UNKNOWN;
 Mutex interruptLock;
+
+int available_cpus = get_nprocs();
 
 SharingManagerInterface* sharingManager = NULL;
 
@@ -169,7 +172,7 @@ int main(int argc, char** argv) {
 		puts("        -d=0...7\t diversification 0=none, 1=sparse, 2=dense, 3=random, 4=native(plingeling), 5=1&4, 6=sparse-random, 7=6&4, default is 4.");
 		puts("        -e=0,1,2\t clause exchange mode 0=none, 1=all-to-all, 2=log-partners, default is 1.");
 		puts("        -fd\t\t filter duplicate clauses.");
-		puts("        -c=<INT>\t use that many cores on each mpi node, default is 1.");
+		puts("        -c=<INT>\t use that many cores on each mpi node, default is as many as available on the current host.");
 		puts("        -v=<INT>\t verbosity level, higher means more messages, default is 1.");
 		#ifdef USE_LGL
 		puts("        -s=lingeling\t use lingeling instead of mergesat");
@@ -202,7 +205,7 @@ int main(int argc, char** argv) {
 			hostname, mpi_rank, mpi_size, params.getFilename());
 	params.printParams();
 
-	solversCount = params.getIntParam("c", 1);
+	solversCount = params.getIntParam("c", available_cpus);
 
 	for (int i = 0; i < solversCount; i++) {
 		#ifdef USE_LGL

@@ -9,7 +9,7 @@ jobs:
 
     steps:
     - name: Install Packages
-      run: sudo apt-get install zlib1g-dev make
+      run: sudo apt-get install zlib1g-dev make libopenmpi-dev
 
     - uses: actions/checkout@v1
 
