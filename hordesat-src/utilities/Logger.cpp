@@ -32,7 +32,7 @@ void log(int verbosityLevel, const char* fmt ...) {
 	if (verbosityLevel <= verbosityLevelSetting) {
 		va_list args;
 		va_start(args, fmt);
-		printf("[%.2f] ", getTime());
+		printf("c [%.2f] ", getTime());
 		vprintf(fmt, args);
 		va_end(args);
 	}
