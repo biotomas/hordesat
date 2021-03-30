@@ -378,8 +378,8 @@ int main(int argc, char** argv) {
 		log(0, "c CPU %.2f\n", searchTime);
 		log(0, "c conflicts %lu (%.2f)\n", globSolveStats.conflicts, globSolveStats.conflicts/searchTime);
 		if (globalResult > 0) {
-			if (globalResult == 10) log(0, "s SATISFIABLE\n");
-			if (globalResult == 20) log(0, "s UNSATISFIABLE\n");
+			if (globalResult == 10) puts("s SATISFIABLE");
+			if (globalResult == 20) puts("s UNSATISFIABLE");
 		} 
 	}
 
@@ -391,5 +391,9 @@ int main(int argc, char** argv) {
 	delete sharingManager;
 
 	MPI_Finalize();
+
+	/* return competition based return code */
+	if(globalResult == 10) return 10;
+	if(globalResult == 20) return 20;
 	return 0;
 }
