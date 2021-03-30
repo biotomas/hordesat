@@ -16,6 +16,9 @@ jobs:
     - name: submodules
       run: git submodule update --init --recursive
 
-    - name: mergesat build
+    - name: hordesat build
       run: make -C hordesat-src
+
+    - name: check small unsat
+      run: tools/ci/run-and-check-unsat.sh hordesat-src/hordesat
 
