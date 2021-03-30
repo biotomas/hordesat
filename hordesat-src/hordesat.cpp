@@ -238,7 +238,12 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	loadFormulaToSolvers(solvers, params.getFilename());
+	if( !loadFormulaToSolvers(solvers, params.getFilename()) )
+	{
+		log(0, "Failed to parse the following file: %s", params.getFilename());
+		puts("s UNKNOWN");
+		return 0;
+	}
 
 	int exchangeMode = params.getIntParam("e", 1);
 	if (exchangeMode == 0) {
