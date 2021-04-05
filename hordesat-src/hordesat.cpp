@@ -20,6 +20,7 @@
 #include "sharing/AllToAllSharingManager.h"
 #include "sharing/LogSharingManager.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
@@ -34,7 +35,9 @@ ParameterProcessor params;
 vector<PortfolioSolverInterface*> solvers;
 int solversCount = 0;
 bool solvingDoneLocal = false;
+bool show_model = false;
 SatResult finalResult = UNKNOWN;
+vector<char> model;
 Mutex interruptLock;
 
 int available_cpus = get_nprocs();
@@ -91,6 +94,18 @@ void* solverRunningThread(void* arg) {
 		if (res == SAT) {
 			solvingDoneLocal = true;
 			finalResult = SAT;
+			if (show_model) {
+				/* only get 1 model */
+				interruptLock.lock();
+				if(model.empty())
+				{
+					model.resize(solver->get_model_variables() + 1, 0);
+					for (int i = 1; i <= solver->get_model_variables(); i++) {
+						model[i] = solver->is_model_value_true(i);
+					}
+				}
+				interruptLock.unlock();
+			}
 		}
 		if (res == UNSAT) {
 			solvingDoneLocal = true;
@@ -172,6 +187,7 @@ int main(int argc, char** argv) {
 		puts("        -d=0...7\t diversification 0=none, 1=sparse, 2=dense, 3=random, 4=native(plingeling), 5=1&4, 6=sparse-random, 7=6&4, default is 4.");
 		puts("        -e=0,1,2\t clause exchange mode 0=none, 1=all-to-all, 2=log-partners, default is 1.");
 		puts("        -fd\t\t filter duplicate clauses.");
+		puts("        -m\t\t print model.");
 		puts("        -c=<INT>\t use that many cores on each mpi node, default is as many as available on the current host.");
 		puts("        -v=<INT>\t verbosity level, higher means more messages, default is 1.");
 		#ifdef USE_LGL
@@ -198,6 +214,8 @@ int main(int argc, char** argv) {
 	if (mpi_rank == 0) {
 		setVerbosityLevel(3);
 	}
+
+	show_model = params.isSet("m");
 
 	char hostname[1024];
 	gethostname(hostname, 1024);
@@ -393,7 +411,21 @@ int main(int argc, char** argv) {
 	MPI_Finalize();
 
 	/* return competition based return code */
-	if(globalResult == 10) return 10;
+	if(globalResult == 10) {
+		/* for now, in case for single node, print model. TODO: transfer via MPI */
+		if (mpi_size == 1)
+		{
+			if(show_model) {
+				std::cout << "v";
+				for(int i = 1 ; i < model.size(); ++ i) {
+					if(model[i] == 0) std::cout << " -"  << i;
+					else std::cout << " "  << i;
+				}
+				std::cout << " 0" << std::endl;
+			}
+		}
+		return 10;
+	}
 	if(globalResult == 20) return 20;
 	return 0;
 }
