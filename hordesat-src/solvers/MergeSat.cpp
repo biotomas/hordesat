@@ -68,6 +68,17 @@ void MergeSatBackend::diversify(int rank, int size) {
 	solver->diversify(rank, size);
 }
 
+bool MergeSatBackend::is_model_value_true(int variable)
+{
+	assert(variable > 0);
+	return solver->model[variable - 1] == l_True;
+}
+
+int MergeSatBackend::get_model_variables()
+{
+	solver->nVars() + 1;
+}
+
 void MergeSatBackend::unsetSolverInterrupt() {
 	solver->clearInterrupt();
 }

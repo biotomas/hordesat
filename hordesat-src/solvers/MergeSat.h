@@ -80,6 +80,9 @@ public:
 	// Diversify
 	void diversify(int rank, int size);
 
+	bool is_model_value_true(int variable);
+	int get_model_variables();
+
 	void addInternalClausesToSolver();
 
 	// constructor
