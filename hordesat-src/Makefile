@@ -26,9 +26,9 @@ LIBS =		-L$(MINIBIN) -lmergesat
 LIBS +=     -lz -lpthread
 
 
-hordesat: $(WSPACE)/mergesat/build/release/lib/libmergesat.a
+hordesat: $(MINIBIN)/libmergesat.a
 
-$(WSPACE)/mergesat/build/release/lib/libmergesat.a:
+$(MINIBIN)/libmergesat.a:
 		$(MAKE) -C $(WSPACE)/mergesat lr ld
 
 TARGET =	hordesat
