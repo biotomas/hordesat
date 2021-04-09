@@ -160,6 +160,7 @@ void MergeSatBackend::addClauses(vector<vector<int> >& clauses) {
 
 void MergeSatBackend::addInitialClauses(vector<vector<int> >& clauses) {
 	vec<Lit> mcls;
+	bool printed_warning = false;
 	for (size_t ind = 0; ind < clauses.size(); ind++) {
 		mcls.clear();
 		for (size_t i = 0; i < clauses[ind].size(); i++) {
@@ -170,8 +171,9 @@ void MergeSatBackend::addInitialClauses(vector<vector<int> >& clauses) {
 			}
 			mcls.push(MINI_LIT(lit));
 		}
-		if (!solver->addClause(mcls)) {
-			printf("unsat when adding initial cls\n");
+		if (!solver->addClause(mcls) && !printed_warning) {
+			printf("c unsat when adding initial cls\n");
+			printed_warning = true;
 		}
 	}
 }
