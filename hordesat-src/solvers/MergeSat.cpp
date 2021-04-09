@@ -32,6 +32,7 @@ MergeSatBackend::MergeSatBackend() {
 
 MergeSatBackend::~MergeSatBackend() {
 	delete solver;
+	solver = 0;
 }
 
 
@@ -76,7 +77,7 @@ bool MergeSatBackend::is_model_value_true(int variable)
 
 int MergeSatBackend::get_model_variables()
 {
-	solver->nVars() + 1;
+	return solver->nVars() + 1;
 }
 
 void MergeSatBackend::unsetSolverInterrupt() {
