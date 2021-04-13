@@ -232,7 +232,7 @@ int main(int argc, char** argv) {
 			hostname, mpi_rank, mpi_size, params.getFilename());
 	params.printParams();
 
-	solversCount = params.getIntParam("c", available_cpus);
+	solversCount = params.getIntParam("c", available_cpus / 2);
 
 	for (int i = 0; i < solversCount; i++) {
 		#ifdef USE_LGL
