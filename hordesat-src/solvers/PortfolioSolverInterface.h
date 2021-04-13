@@ -80,6 +80,10 @@ public:
 
 	virtual void diversify(int rank, int size) = 0;
 
+	// Get model
+	virtual bool is_model_value_true(int variable) = 0;
+	virtual int get_model_variables() = 0;
+
 	// destructor
 	virtual ~PortfolioSolverInterface() {}
 };

@@ -32,6 +32,7 @@ MergeSatBackend::MergeSatBackend() {
 
 MergeSatBackend::~MergeSatBackend() {
 	delete solver;
+	solver = 0;
 }
 
 
@@ -66,6 +67,17 @@ void MergeSatBackend::setSolverInterrupt() {
 // Diversify the solver
 void MergeSatBackend::diversify(int rank, int size) {
 	solver->diversify(rank, size);
+}
+
+bool MergeSatBackend::is_model_value_true(int variable)
+{
+	assert(variable > 0);
+	return solver->model[variable - 1] == l_True;
+}
+
+int MergeSatBackend::get_model_variables()
+{
+	return solver->nVars() + 1;
 }
 
 void MergeSatBackend::unsetSolverInterrupt() {
@@ -148,6 +160,7 @@ void MergeSatBackend::addClauses(vector<vector<int> >& clauses) {
 
 void MergeSatBackend::addInitialClauses(vector<vector<int> >& clauses) {
 	vec<Lit> mcls;
+	bool printed_warning = false;
 	for (size_t ind = 0; ind < clauses.size(); ind++) {
 		mcls.clear();
 		for (size_t i = 0; i < clauses[ind].size(); i++) {
@@ -158,8 +171,9 @@ void MergeSatBackend::addInitialClauses(vector<vector<int> >& clauses) {
 			}
 			mcls.push(MINI_LIT(lit));
 		}
-		if (!solver->addClause(mcls)) {
-			printf("unsat when adding initial cls\n");
+		if (!solver->addClause(mcls) && !printed_warning) {
+			printf("c unsat when adding initial cls\n");
+			printed_warning = true;
 		}
 	}
 }
