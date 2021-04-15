@@ -41,6 +41,8 @@ vector<char> model;
 Mutex interruptLock;
 
 int available_cpus = get_nprocs();
+int diversify_size = 0;
+int diversify_rank = 0;
 
 SharingManagerInterface* sharingManager = NULL;
 
@@ -150,9 +152,14 @@ void sparseRandomDiversification(unsigned int seed, int mpi_size) {
 }
 
 void nativeDiversification(int mpi_rank, int mpi_size) {
-	int base = mpi_rank * solversCount;
+    int base = mpi_rank * solversCount;
     for (int sid = 0; sid < solversCount; sid++) {
-    	solvers[sid]->diversify(sid + base, mpi_size * solversCount);
+        int solver_size = diversify_size * solversCount;
+        solver_size = solver_size >= mpi_size * solversCount ? solver_size : diversify_size * solversCount;
+        int solver_id = sid + base == 0 ? sid + base : sid + base + diversify_rank;
+        solver_id = solver_id >= solver_size ? solver_size : solver_id;
+        log(1, "Diversify solver %d with rank/size: %d / %d", sid, solver_id, solver_size);
+        solvers[sid]->diversify(sid + base, mpi_size * solversCount);
     }
 }
 
@@ -202,6 +209,8 @@ int main(int argc, char** argv) {
 		puts("        -r=<INT>\t max number of rounds (~timelimit in seconds), default is unlimited.");
 		puts("        -i=<INT>\t communication interval in miliseconds, default is 1000.");
 		puts("        -t=<INT>\t timelimit in seconds, default is unlimited.");
+		puts("        -diversify_size=<INT>\t fake number of participating cores to be able to test different configurations.");
+		puts("        -diversify_rank_offset=<INT>\t fake number of participating solvers by adding an offset to the configuration to be used.");
 		MPI_Finalize();
 		return 0;
 	}
@@ -223,7 +232,7 @@ int main(int argc, char** argv) {
 			hostname, mpi_rank, mpi_size, params.getFilename());
 	params.printParams();
 
-	solversCount = params.getIntParam("c", available_cpus);
+	solversCount = params.getIntParam("c", available_cpus / 2);
 
 	for (int i = 0; i < solversCount; i++) {
 		#ifdef USE_LGL
@@ -280,6 +289,12 @@ int main(int argc, char** argv) {
 	}
 
 	int diversification = params.getIntParam("d", 4);
+
+	diversify_size = params.getIntParam("diversify_size", mpi_size);
+	diversify_rank = params.getIntParam("diversify_rank_offset", mpi_rank);
+
+	log(1, "Diversify for solver %d out of %d\n", mpi_rank, mpi_size);
+
 	switch (diversification) {
 	case 1:
 		sparseDiversification(mpi_size, mpi_rank);

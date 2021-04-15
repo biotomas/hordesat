@@ -91,7 +91,6 @@ void MergeSatBackend::addInternalClausesToSolver () {
 		mcls.clear();
 		MAKE_MINI_VEC(clausesToAdd[ind], mcls);
 		if (!solver->addClause(mcls)) {
-			clauseAddingLock.unlock();
 			// printf("unsat when adding cls\n");
 			return;
 		}
