@@ -1,3 +1,3 @@
-[submodule "candy"]
-	path = candy
-	url = https://github.com/Udopia/candy-kingdom.git
+[submodule "mergesat"]
+	path = mergesat
+	url = https://github.com/conp-solutions/mergesat.git
