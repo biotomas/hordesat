@@ -6,21 +6,15 @@
 // Date        : $Date: 2015-04-09 16:14:19 +0200 (Thu, 09 Apr 2015) $
 //============================================================================
 
-#ifdef USE_CANDY
 #include "solvers/CandyHorde.h"
-#endif
-#include "solvers/MergeSat.h"
-#ifdef USE_LGL
+#include "solvers/MiniSat.h"
 #include "solvers/Lingeling.h"
-#endif
 #include "utilities/DebugUtils.h"
-#include "utilities/SatUtils.h"
 #include "utilities/Threading.h"
 #include "utilities/ParameterProcessor.h"
 #include "sharing/AllToAllSharingManager.h"
 #include "sharing/LogSharingManager.h"
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
@@ -29,20 +23,13 @@
 #include <unistd.h>
 #include "utilities/Logger.h"
 
-#include <sys/sysinfo.h> // get number of available cores
 
 ParameterProcessor params;
 vector<PortfolioSolverInterface*> solvers;
 int solversCount = 0;
 bool solvingDoneLocal = false;
-bool show_model = false;
 SatResult finalResult = UNKNOWN;
-vector<char> model;
 Mutex interruptLock;
-
-int available_cpus = get_nprocs();
-int diversify_size = 0;
-int diversify_rank = 0;
 
 SharingManagerInterface* sharingManager = NULL;
 
@@ -96,18 +83,6 @@ void* solverRunningThread(void* arg) {
 		if (res == SAT) {
 			solvingDoneLocal = true;
 			finalResult = SAT;
-			if (show_model) {
-				/* only get 1 model */
-				interruptLock.lock();
-				if(model.empty())
-				{
-					model.resize(solver->get_model_variables() + 1, 0);
-					for (int i = 1; i <= solver->get_model_variables(); i++) {
-						model[i] = solver->is_model_value_true(i);
-					}
-				}
-				interruptLock.unlock();
-			}
 		}
 		if (res == UNSAT) {
 			solvingDoneLocal = true;
@@ -152,14 +127,9 @@ void sparseRandomDiversification(unsigned int seed, int mpi_size) {
 }
 
 void nativeDiversification(int mpi_rank, int mpi_size) {
-    int base = mpi_rank * solversCount;
+	int base = mpi_rank * solversCount;
     for (int sid = 0; sid < solversCount; sid++) {
-        int solver_size = diversify_size * solversCount;
-        solver_size = solver_size >= mpi_size * solversCount ? solver_size : diversify_size * solversCount;
-        int solver_id = sid + base == 0 ? sid + base : sid + base + diversify_rank;
-        solver_id = solver_id >= solver_size ? solver_size : solver_id;
-        log(1, "Diversify solver %d with rank/size: %d / %d", sid, solver_id, solver_size);
-        solvers[sid]->diversify(sid + base, mpi_size * solversCount);
+    	solvers[sid]->diversify(sid + base, mpi_size * solversCount);
     }
 }
 
@@ -191,26 +161,17 @@ int main(int argc, char** argv) {
 		puts("This is HordeSat ($Revision: 46 $)");
 		puts("USAGE: [mpirun ...] ./hordesat [parameters] input.cnf");
 		puts("Parameters:");
-		puts("        -d=0...7\t diversification 0=none, 1=sparse, 2=dense, 3=random, 4=native(plingeling), 5=1&4, 6=sparse-random, 7=6&4, default is 4.");
+		puts("        -d=0...7\t diversification 0=none, 1=sparse, 2=dense, 3=random, 4=native(plingeling), 5=1&4, 6=sparse-random, 7=6&4, default is 1.");
 		puts("        -e=0,1,2\t clause exchange mode 0=none, 1=all-to-all, 2=log-partners, default is 1.");
 		puts("        -fd\t\t filter duplicate clauses.");
-		puts("        -m\t\t print model.");
-		puts("        -c=<INT>\t use that many cores on each mpi node, default is as many as available on the current host.");
+		puts("        -c=<INT>\t use that many cores on each mpi node, default is 1.");
 		puts("        -v=<INT>\t verbosity level, higher means more messages, default is 1.");
-		#ifdef USE_LGL
-		puts("        -s=lingeling\t use lingeling instead of mergesat");
-		#endif
-		#ifdef USE_CANDY
+		puts("        -s=minisat\t use minisat instead of lingeling");
 		puts("        -s=candy\t use candy instead of lingeling");
-		#endif
-		#ifdef USE_LGL
-		puts("        -s=combo\t use both mergesat and lingeling");
-		#endif
+		puts("        -s=combo\t use both minisat and lingeling");
 		puts("        -r=<INT>\t max number of rounds (~timelimit in seconds), default is unlimited.");
 		puts("        -i=<INT>\t communication interval in miliseconds, default is 1000.");
 		puts("        -t=<INT>\t timelimit in seconds, default is unlimited.");
-		puts("        -diversify_size=<INT>\t fake number of participating cores to be able to test different configurations.");
-		puts("        -diversify_rank_offset=<INT>\t fake number of participating solvers by adding an offset to the configuration to be used.");
 		MPI_Finalize();
 		return 0;
 	}
@@ -224,53 +185,38 @@ int main(int argc, char** argv) {
 		setVerbosityLevel(3);
 	}
 
-	show_model = params.isSet("m");
-
 	char hostname[1024];
 	gethostname(hostname, 1024);
 	log(0, "Running HordeSat ($Revision: 46 $) on %s rank %d/%d input %s with parameters: ",
 			hostname, mpi_rank, mpi_size, params.getFilename());
 	params.printParams();
 
-	solversCount = params.getIntParam("c", available_cpus / 2);
+	solversCount = params.getIntParam("c", 1);
 
 	for (int i = 0; i < solversCount; i++) {
-		#ifdef USE_LGL
-		if (params.getParam("s") == "lingeling") {
-			solvers.push_back(new Lingeling());
-			log(1, "Running Lingeling on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
-		}
-		else if (params.getParam("s") == "combo") {
+		if (params.getParam("s") == "minisat") {
+			solvers.push_back(new MiniSat());
+			log(1, "Running MiniSat on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
+		} else if (params.getParam("s") == "combo") {
 			if ((mpi_rank + i) % 2 == 0) {
-				solvers.push_back(new MergeSatBackend());
-				log(1, "Running MergeSat on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
+				solvers.push_back(new MiniSat());
+				log(1, "Running MiniSat on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
 			} else {
 				solvers.push_back(new Lingeling());
 				log(1, "Running Lingeling on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
 			}
-		}
-		#endif
-		#ifdef USE_CANDY
+		} 
 		else if (params.getParam("s") == "candy") {
 			solvers.push_back(new CandyHorde(mpi_rank*solversCount+i, mpi_size * solversCount));
 			log(1, "Running Candy on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
 		} 
-		#endif
-		#if defined(USE_LGL) || defined(USE_CANDY)
-		else
-		#endif
-		{
-			solvers.push_back(new MergeSatBackend());
-			log(1, "Running MergeSat on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
+		else {
+			solvers.push_back(new Lingeling());
+			log(1, "Running Lingeling on core %d of node %d/%d\n", i, mpi_rank, mpi_size);
 		}
 	}
 
-	if( !loadFormulaToSolvers(solvers, params.getFilename()) )
-	{
-		log(0, "Failed to parse the following file: %s", params.getFilename());
-		puts("s UNKNOWN");
-		return 0;
-	}
+	loadFormulaToSolvers(solvers, params.getFilename());
 
 	int exchangeMode = params.getIntParam("e", 1);
 	if (exchangeMode == 0) {
@@ -288,13 +234,7 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	int diversification = params.getIntParam("d", 4);
-
-	diversify_size = params.getIntParam("diversify_size", mpi_size);
-	diversify_rank = params.getIntParam("diversify_rank_offset", mpi_rank);
-
-	log(1, "Diversify for solver %d out of %d\n", mpi_rank, mpi_size);
-
+	int diversification = params.getIntParam("d", 1);
 	switch (diversification) {
 	case 1:
 		sparseDiversification(mpi_size, mpi_rank);
@@ -411,8 +351,8 @@ int main(int argc, char** argv) {
 		log(0, "c CPU %.2f\n", searchTime);
 		log(0, "c conflicts %lu (%.2f)\n", globSolveStats.conflicts, globSolveStats.conflicts/searchTime);
 		if (globalResult > 0) {
-			if (globalResult == 10) puts("s SATISFIABLE");
-			if (globalResult == 20) puts("s UNSATISFIABLE");
+			if (globalResult == 10) log(0, "s SATISFIABLE\n");
+			if (globalResult == 20) log(0, "s UNSATISFIABLE\n");
 		} 
 	}
 
@@ -424,23 +364,5 @@ int main(int argc, char** argv) {
 	delete sharingManager;
 
 	MPI_Finalize();
-
-	/* return competition based return code */
-	if(globalResult == 10) {
-		/* for now, in case for single node, print model. TODO: transfer via MPI */
-		if (mpi_size == 1)
-		{
-			if(show_model) {
-				std::cout << "v";
-				for(int i = 1 ; i < model.size(); ++ i) {
-					if(model[i] == 0) std::cout << " -"  << i;
-					else std::cout << " "  << i;
-				}
-				std::cout << " 0" << std::endl;
-			}
-		}
-		return 10;
-	}
-	if(globalResult == 20) return 20;
 	return 0;
 }

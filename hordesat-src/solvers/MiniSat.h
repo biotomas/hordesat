@@ -1,7 +1,6 @@
 // Copyright (c) 2015 Tomas Balyo, Karlsruhe Institute of Technology
-// Copyright (c) 2021 Norbert Manthey
 /*
- * MergeSat.h
+ * MiniSat.h
  *
  *  Created on: Oct 9, 2014
  *      Author: balyo
@@ -16,31 +15,25 @@ using namespace std;
 
 #define CLS_COUNT_INTERRUPT_LIMIT 300
 
-// allow to modify the name of the namespace, if required
-#ifndef MERGESAT_NSPACE
-#define MERGESAT_NSPACE Minisat
-#endif
-
-// some forward declatarations for MergeSat
-namespace MERGESAT_NSPACE {
-	class SimpSolver;
+// some forward declatarations for Minisat
+namespace Minisat {
+	class Solver;
 	class Lit;
-	template<class T> class vec;
+	template<class T, class _Size> class vec;
 }
 
 
-class MergeSatBackend : public PortfolioSolverInterface {
+class MiniSat : public PortfolioSolverInterface {
 
 private:
-	MERGESAT_NSPACE::SimpSolver *solver;
+	Minisat::Solver *solver;
 	vector< vector<int> > learnedClausesToAdd;
 	vector< vector<int> > clausesToAdd;
 	Mutex clauseAddingLock;
 	int myId;
 	LearnedClauseCallback* callback;
 	int learnedLimit;
-	friend void miniLearnCallback(const std::vector<int>& cls, int glueValue, void* issuer);
-	friend void consumeSharedCls(void* issuer);
+	friend void miniLearnCallback(const Minisat::vec<Minisat::Lit,int>& cls, void* issuer);
 
 public:
 
@@ -80,15 +73,10 @@ public:
 	// Diversify
 	void diversify(int rank, int size);
 
-	bool is_model_value_true(int variable);
-	int get_model_variables();
-
-	void addInternalClausesToSolver();
-
 	// constructor
-	MergeSatBackend();
+	MiniSat();
 	// destructor
-	virtual ~MergeSatBackend();
+	virtual ~MiniSat();
 
 };
 

@@ -1,4 +1,3 @@
-// Copyright (c) 2015 Tomas Balyo, Karlsruhe Institute of Technology
 /*
  * SatUtils.cpp
  *

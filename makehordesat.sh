@@ -1,18 +1,15 @@
 # get minisat and patch it
-if [ ! -d mergesat ]; then
-  git clone git@github.com:conp-solutions/mergesat.git
-  cd mergesat
-  git checkout devel # might be a specific commit lateron
-  cd ..
-
-  # fixup MergeSat to provide hook
-  # patch minisat/minisat/core/Solver.h < minisat.h.patch
-  # patch minisat/minisat/core/Solver.cc < minisat.cc.patch
+if [ ! -d minisat ]; then
+  wget https://github.com/niklasso/minisat/archive/master.zip
+  unzip master.zip
+  mv minisat-master minisat
+  patch minisat/minisat/core/Solver.h < minisat.h.patch
+  patch minisat/minisat/core/Solver.cc < minisat.cc.patch
 fi
 
 # make minisat
-cd mergesat
-make all -j $(nproc)
+cd minisat
+make
 cd ..
 
 # get lingeling
