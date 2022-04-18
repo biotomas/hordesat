@@ -1,4 +1,3 @@
-// Copyright (c) 2015 Tomas Balyo, Karlsruhe Institute of Technology
 /*
  * portfolioSolverInterface.h
  *
@@ -10,6 +9,9 @@
 #define PORTFOLIOSOLVERINTERFACE_H_
 
 #include <vector>
+#include <set>
+#include <stdexcept>
+
 using namespace std;
 
 enum SatResult {
@@ -38,16 +40,21 @@ public:
  */
 class PortfolioSolverInterface {
 public:
+	int solverId;
+
 	// Load formula from a given dimacs file, return false if failed
 	virtual bool loadFormula(const char* filename) = 0;
 
 	// Get the number of variables of the formula
+	// NOT NECESSARY
 	virtual int getVariablesCount() = 0;
 
 	// Get a variable suitable for search splitting
+	// NOT NECESSARY
 	virtual int getSplittingVariable() = 0;
 
 	// Set initial phase for a given variable
+	// NOT NECESSARY used only for diversification of the portfolio
 	virtual void setPhase(const int var, const bool phase) = 0;
 
 	// Interrupt the SAT solving, solving cannot continue until interrupt is unset.
@@ -59,7 +66,12 @@ public:
 	// Solve the formula with a given set of assumptions
 	virtual SatResult solve(const vector<int>& assumptions = vector<int>()) = 0;
 
+	virtual vector<int> getSolution() = 0;
+	virtual set<int> getFailedAssumptions() = 0;
+
 	// Add a (list of) permanent clause(s) to the formula
+	// NOT NECESSARY IF LOAD FORMULA IS IMPLEMENTED
+	virtual void addLiteral(int lit) = 0;
 	virtual void addClause(vector<int>& clause) = 0;
 	virtual void addClauses(vector<vector<int> >& clauses) = 0;
 	virtual void addInitialClauses(vector<vector<int> >& clauses) = 0;
@@ -76,8 +88,10 @@ public:
 	virtual void increaseClauseProduction() = 0;
 
 	// Get solver statistics
+	// NOT NECESSARY
 	virtual SolvingStatistics getStatistics() = 0;
 
+	// You are solver #rank of #size solvers, diversify your parameters (seeds, heuristics, etc.) accordingly.
 	virtual void diversify(int rank, int size) = 0;
 
 	// destructor
